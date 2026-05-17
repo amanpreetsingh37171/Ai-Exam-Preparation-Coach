@@ -238,8 +238,11 @@ elif menu == "Quiz":
     if st.session_state.quiz_data:
         for i, q in enumerate(st.session_state.quiz_data):
             st.write(f"### Q{i+1}: {q['question']}")
-            ans = st.radio("Choose:", q["options"], key=f"q_{i}_{st.session_state.retake_count}", index=None)
-            st.session_state.quiz_answers[i] = ans
+            # Map labels A, B, C, D to the actual option content
+            display_options = {f"{chr(65+idx)}) {opt}": opt for idx, opt in enumerate(q["options"])}
+            selected_label = st.radio("Choose:", list(display_options.keys()), key=f"q_{i}_{st.session_state.retake_count}", index=None)
+            # Store the underlying content for comparison
+            st.session_state.quiz_answers[i] = display_options.get(selected_label)
 
         if not st.session_state.quiz_submitted:
             if st.button("Submit Quiz"):
@@ -292,10 +295,43 @@ elif menu == "Flashcards":
 
     db = load_vector()
     if db and st.button("Generate"):
-        docs = db.similarity_search("important", k=5)
+        docs = db.similarity_search("key concepts and comprehensive details", k=6)
         context = "\n".join([d.page_content for d in docs])
-        res = generate_ai([{"role": "user", "content": f"Generate flashcards:\n{context}"}])
+        flashcard_prompt = f"""
+        Generate 10 deep and informative flashcards based on the following context.
+        Each flashcard must be comprehensive and provide significant educational value.
+        
+        Format each card as follows:
+        ---
+        **Front:** [A specific concept, term, or question]
+        **Back:** [A detailed explanation including context, importance, and examples]
+        ---
+        
+        Context:
+        {context}
+        """
+        res = generate_ai([{"role": "user", "content": flashcard_prompt}])
         st.write(res)
+
+        # Parse and display flashcards with colored backgrounds
+        cards = res.split("---")
+        bg_colors = ["#E0FFFF", "#F5F5DC", "#FDF5E6"]  # Aqua, Light Brown, Light Caramel
+        color_idx = 0
+
+        for card in cards:
+            content = card.strip()
+            if content and "Front:" in content:
+                color = bg_colors[color_idx % len(bg_colors)]
+                # Convert Markdown-style bolding to HTML for display within the div
+                formatted_content = content.replace("**Front:**", "<b>Front:</b>").replace("**Back:**", "<br><b>Back:</b>").replace("\n", "<br>")
+                st.markdown(f"""
+                    <div style="background-color: {color}; padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #ddd; color: #2c3e50; line-height: 1.6; box-shadow: 2px 2px 8px rgba(0,0,0,0.1);">
+                        {formatted_content}
+                    </div>
+                """, unsafe_allow_html=True)
+                color_idx += 1
+            elif content:
+                st.write(content)
 
 # ---------- NOTES ----------
 elif menu == "Notes":
