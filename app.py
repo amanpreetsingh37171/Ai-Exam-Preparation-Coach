@@ -23,6 +23,7 @@ st.set_page_config(page_title="AI Exam Coach", layout="wide")
 # ================= SESSION =================
 defaults = {
     "chat_history": [],
+    "vector_db": None,
     "quiz_data": None,
     "quiz_answers": {},
     "quiz_submitted": False,
@@ -65,13 +66,10 @@ def embeddings():
     return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 def create_vector(chunks):
-    db = FAISS.from_texts(chunks, embedding=embeddings())
-    db.save_local("faiss_index")
+    return FAISS.from_texts(chunks, embedding=embeddings())
 
 def load_vector():
-    if not os.path.exists("faiss_index"):
-        return None
-    return FAISS.load_local("faiss_index", embeddings(), allow_dangerous_deserialization=True)
+    return st.session_state.get("vector_db")
 
 # ================= AI =================
 def generate_ai(messages):
@@ -138,6 +136,7 @@ def generate_quiz(context):
         "question": "text",
         "options": ["A","B","C","D"],
         "answer": "correct option",
+        "explanation": "why it's correct",
         "topic": "topic"
       }}
     ]
@@ -145,6 +144,8 @@ def generate_quiz(context):
     Context:
     {context}
     """
+    # Instruction to AI: The "answer" MUST be the exact string from the "options" list.
+    prompt += "\n\nIMPORTANT: The 'answer' field MUST match one of the strings in the 'options' list exactly."
     raw = generate_ai([{"role": "user", "content": prompt}])
     quiz = extract_json(raw)
     if quiz:
@@ -181,7 +182,7 @@ with st.sidebar:
         if files:
             text = get_pdf_text(files)
             chunks = get_chunks(text)
-            create_vector(chunks)
+            st.session_state.vector_db = create_vector(chunks)
             st.success("✅ PDFs processed!")
         else:
             st.warning("Upload PDFs")
@@ -253,15 +254,19 @@ elif menu == "Quiz":
 
             for i, q in enumerate(st.session_state.quiz_data):
                 sel = st.session_state.quiz_answers.get(i)
-                correct = q["answer"]
+                correct = q.get("answer", "")
                 topic = q.get("topic", "General")
 
                 topic_perf.setdefault(topic, {"correct": 0, "total": 0})
                 topic_perf[topic]["total"] += 1
 
-                if sel == correct:
+                # Standardize comparison to fix logic errors
+                if sel and str(sel).strip().lower() == str(correct).strip().lower():
                     score += 1
                     topic_perf[topic]["correct"] += 1
+                    st.write(f"✅ Q{i+1}: Correct!")
+                else:
+                    st.write(f"❌ Q{i+1}: Wrong. Correct answer: {correct}")
 
             st.success(f"🎯 Score: {score}/{len(st.session_state.quiz_data)}")
 
