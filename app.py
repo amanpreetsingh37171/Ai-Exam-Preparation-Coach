@@ -180,8 +180,17 @@ st.markdown("""
         border-left: 5px solid #1a237e;
         border: 1px solid rgba(0,0,0,0.1);
     }
-    /* Force all text in light sections to be dark for visibility in Dark Theme */
-    .section-header h2, .section-header p, .section-header b, .section-header span {
+    .flashcard-box {
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.1);
+        line-height: 1.6;
+        box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
+    }
+    /* Force all text in light sections to be dark for high contrast in all themes */
+    .section-header h2, .section-header p, .section-header b, .section-header span,
+    .flashcard-box, .flashcard-box b, .flashcard-box span, .flashcard-box div {
         color: #000000 !important;
         margin: 0;
     }
@@ -338,11 +347,11 @@ elif menu == "Flashcards":
             content = card.strip()
             if "Front:" in content and "Back:" in content:
                 color = bg_colors[color_idx % len(bg_colors)]
-                # Convert Markdown-style bolding to HTML for display within the div
-                formatted_content = content.replace("**Front:**", "<b style='color: #000000;'>Front:</b>").replace("**Back:**", "<br><b style='color: #000000;'>Back:</b>").replace("\n", "<br>")
+                # Clean formatting: replace markdown markers with HTML for consistent styling
+                formatted_content = content.replace("**Front:**", "<b>Front:</b>").replace("**Back:**", "<br><b>Back:</b>").replace("\n", "<br>")
                 st.markdown(f"""
-                    <div style="background-color: {color}; padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.1); color: #000000 !important; line-height: 1.6; box-shadow: 2px 2px 8px rgba(0,0,0,0.05);">
-                        <span style="color: #000000 !important;">{formatted_content}</span>
+                    <div class="flashcard-box" style="background-color: {color};">
+                        {formatted_content}
                     </div>
                 """, unsafe_allow_html=True)
                 color_idx += 1
