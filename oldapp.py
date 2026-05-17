@@ -1,5 +1,5 @@
 import streamlit as st
-import os, json, re, random
+import os, json, re
 from datetime import datetime
 from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -7,7 +7,6 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from groq import Groq
 from dotenv import load_dotenv
-from fpdf import FPDF
 
 # ================= CONFIG =================
 load_dotenv()
@@ -26,8 +25,6 @@ defaults = {
     "quiz_data": None,
     "quiz_answers": {},
     "quiz_submitted": False,
-    "score_recorded": False,
-    "retake_count": 0,
     "quiz_history": [],
     "generated_notes": ""
 }
@@ -49,16 +46,6 @@ def get_pdf_text(files):
 def get_chunks(text):
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
     return splitter.split_text(text)
-
-def export_as_pdf(text):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    # Clean text for latin-1 compatibility (FPDF default)
-    clean_text = text.encode('latin-1', 'replace').decode('latin-1')
-    pdf.multi_cell(0, 10, txt=clean_text)
-    output = pdf.output(dest='S')
-    return output.encode('latin-1') if isinstance(output, str) else output
 
 @st.cache_resource
 def embeddings():
@@ -146,11 +133,7 @@ def generate_quiz(context):
     {context}
     """
     raw = generate_ai([{"role": "user", "content": prompt}])
-    quiz = extract_json(raw)
-    if quiz:
-        for q in quiz:
-            random.shuffle(q["options"])
-    return quiz
+    return extract_json(raw)
 
 # ================= NOTES =================
 def generate_notes(context):
@@ -220,32 +203,25 @@ elif menu == "Quiz":
     st.title("🧪 Interactive Quiz")
 
     db = load_vector()
-    if not db:
-        st.warning("⚠️ Please upload and process PDFs in the sidebar first!")
-    elif st.button("Generate Quiz"):
+    if db and st.button("Generate Quiz"):
         docs = db.similarity_search("important topics", k=5)
         context = "\n".join([d.page_content for d in docs])
 
         quiz = generate_quiz(context)
         if quiz:
             st.session_state.quiz_data = quiz
-            st.session_state.quiz_answers = {i: None for i in range(len(quiz))}
+            st.session_state.quiz_answers = {}
             st.session_state.quiz_submitted = False
-            st.session_state.score_recorded = False
 
     if st.session_state.quiz_data:
         for i, q in enumerate(st.session_state.quiz_data):
             st.write(f"### Q{i+1}: {q['question']}")
-            ans = st.radio("Choose:", q["options"], key=f"q_{i}_{st.session_state.retake_count}", index=None)
+            ans = st.radio("Choose:", q["options"], key=f"q_{i}")
             st.session_state.quiz_answers[i] = ans
 
         if not st.session_state.quiz_submitted:
             if st.button("Submit Quiz"):
-                if any(v is None for v in st.session_state.quiz_answers.values()):
-                    st.error("Please answer all questions before submitting!")
-                else:
-                    st.session_state.quiz_submitted = True
-                    st.rerun()
+                st.session_state.quiz_submitted = True
 
         if st.session_state.quiz_submitted:
             score = 0
@@ -265,20 +241,10 @@ elif menu == "Quiz":
 
             st.success(f"🎯 Score: {score}/{len(st.session_state.quiz_data)}")
 
-            if not st.session_state.score_recorded:
-                st.session_state.quiz_history.append({
-                    "score": score,
-                    "topics": topic_perf
-                })
-                st.session_state.score_recorded = True
-            
-            if st.button("🔄 Retake Quiz"):
-                st.session_state.quiz_data = None
-                st.session_state.quiz_submitted = False
-                st.session_state.quiz_answers = {}
-                st.session_state.score_recorded = False
-                st.session_state.retake_count += 1
-                st.rerun()
+            st.session_state.quiz_history.append({
+                "score": score,
+                "topics": topic_perf
+            })
 
 # ---------- FLASHCARDS ----------
 elif menu == "Flashcards":
@@ -304,12 +270,10 @@ elif menu == "Notes":
     if st.session_state.generated_notes:
         st.write(st.session_state.generated_notes)
 
-        pdf_bytes = export_as_pdf(st.session_state.generated_notes)
         st.download_button(
-            "📥 Download Notes (PDF)",
-            pdf_bytes,
-            "notes.pdf",
-            "application/pdf"
+            "📥 Download Notes",
+            st.session_state.generated_notes,
+            "notes.txt"
         )
 
 # ---------- PLANNER ----------
