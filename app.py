@@ -127,25 +127,26 @@ def extract_json(text):
 
 def generate_quiz(context):
     prompt = f"""
-    Generate 5 MCQs.
-
-    ONLY JSON.
-
+    Generate 5 multiple-choice questions (MCQs) based on the provided context.
+    
+    Return ONLY a valid JSON list of objects with this structure:
     [
       {{
-        "question": "text",
-        "options": ["A","B","C","D"],
-        "answer": "correct option",
-        "explanation": "why it's correct",
-        "topic": "topic"
+        "question": "The actual question text",
+        "options": ["Option 1 content", "Option 2 content", "Option 3 content", "Option 4 content"],
+        "answer": "The exact content of the correct option",
+        "explanation": "A short explanation of why this answer is correct",
+        "topic": "The specific subject/topic"
       }}
     ]
+
+    IMPORTANT: 
+    1. The 'options' list MUST contain actual text content derived from the context, NOT just letters like 'A', 'B', 'C', 'D'.
+    2. The 'answer' field MUST match one of the strings in the 'options' list exactly.
 
     Context:
     {context}
     """
-    # Instruction to AI: The "answer" MUST be the exact string from the "options" list.
-    prompt += "\n\nIMPORTANT: The 'answer' field MUST match one of the strings in the 'options' list exactly."
     raw = generate_ai([{"role": "user", "content": prompt}])
     quiz = extract_json(raw)
     if quiz:
@@ -268,15 +269,15 @@ elif menu == "Quiz":
                 else:
                     st.write(f"❌ Q{i+1}: Wrong. Correct answer: {correct}")
 
-            st.success(f"🎯 Score: {score}/{len(st.session_state.quiz_data)}")
-
             if not st.session_state.score_recorded:
                 st.session_state.quiz_history.append({
                     "score": score,
                     "topics": topic_perf
                 })
                 st.session_state.score_recorded = True
-            
+
+            st.success(f"🎯 Final Score: {score}/{len(st.session_state.quiz_data)}")
+
             if st.button("🔄 Retake Quiz"):
                 st.session_state.quiz_data = None
                 st.session_state.quiz_submitted = False
