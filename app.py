@@ -171,6 +171,17 @@ def generate_notes(context):
 # ================= MAIN =================
 st.title("🎓 AI Exam Preparation Coach")
 
+st.markdown("""
+    <style>
+    .section-header {
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+        border-left: 5px solid #1a237e;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 menu = st.sidebar.selectbox("Menu", [
     "Chat", "Quiz", "Flashcards", "Notes", "Planner", "Analytics"
 ])
@@ -196,7 +207,7 @@ with st.sidebar:
 
 # ---------- CHAT ----------
 if menu == "Chat":
-    st.title("💬 Smart Chat")
+    st.markdown('<div class="section-header" style="background-color: #E3F2FD;"><h2>💬 Smart Chat</h2><p>Ask questions about your documents and get detailed, context-aware answers.</p></div>', unsafe_allow_html=True)
 
     db = load_vector()
     if not db:
@@ -219,7 +230,7 @@ if menu == "Chat":
 
 # ---------- QUIZ ----------
 elif menu == "Quiz":
-    st.title("🧪 Interactive Quiz")
+    st.markdown('<div class="section-header" style="background-color: #FCE4EC;"><h2>🧪 Interactive Quiz</h2><p>Test your knowledge with AI-generated multiple choice questions based on your PDFs.</p></div>', unsafe_allow_html=True)
 
     db = load_vector()
     if not db:
@@ -291,7 +302,7 @@ elif menu == "Quiz":
 
 # ---------- FLASHCARDS ----------
 elif menu == "Flashcards":
-    st.title("🧠 Flashcards")
+    st.markdown('<div class="section-header" style="background-color: #E0F2F1;"><h2>🧠 Flashcards</h2><p>Review key concepts with study cards. <b>Front:</b> Question/Concept | <b>Back:</b> Detailed Explanation.</p></div>', unsafe_allow_html=True)
 
     db = load_vector()
     if db and st.button("Generate"):
@@ -311,7 +322,6 @@ elif menu == "Flashcards":
         {context}
         """
         res = generate_ai([{"role": "user", "content": flashcard_prompt}])
-        st.write(res)
 
         # Parse and display flashcards with colored backgrounds
         cards = res.split("---")
@@ -335,7 +345,7 @@ elif menu == "Flashcards":
 
 # ---------- NOTES ----------
 elif menu == "Notes":
-    st.title("📝 Generate Notes")
+    st.markdown('<div class="section-header" style="background-color: #F1F8E9;"><h2>📝 Generate Notes</h2><p>Create comprehensive, structured study notes and summaries for quick revision.</p></div>', unsafe_allow_html=True)
 
     db = load_vector()
     if db and st.button("Generate Notes"):
@@ -356,7 +366,8 @@ elif menu == "Notes":
 
 # ---------- PLANNER ----------
 elif menu == "Planner":
-    topic = st.text_input("Enter topic")
+    st.markdown('<div class="section-header" style="background-color: #FFFDE7;"><h2>📅 Study Planner</h2><p>Get a structured study plan to help you organize your exam preparation.</p></div>', unsafe_allow_html=True)
+    topic = st.text_input("Enter topic", placeholder="e.g., Photosynthesis, Calculus, etc.")
 
     if st.button("Generate Plan"):
         plan = generate_ai([{"role": "user", "content": f"Create study plan for {topic}"}])
@@ -364,7 +375,7 @@ elif menu == "Planner":
 
 # ---------- ANALYTICS ----------
 elif menu == "Analytics":
-    st.title("📊 Analytics")
+    st.markdown('<div class="section-header" style="background-color: #F3E5F5;"><h2>📊 Analytics</h2><p>Track your progress, view quiz history, and identify areas that need more focus.</p></div>', unsafe_allow_html=True)
 
     if not st.session_state.quiz_history:
         st.info("No quiz attempts yet")
