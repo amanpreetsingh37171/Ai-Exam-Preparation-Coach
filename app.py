@@ -178,6 +178,12 @@ st.markdown("""
         border-radius: 10px;
         margin-bottom: 25px;
         border-left: 5px solid #1a237e;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    /* Force all text in light sections to be dark for visibility in Dark Theme */
+    .section-header h2, .section-header p, .section-header b, .section-header span {
+        color: #000000 !important;
+        margin: 0;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -302,7 +308,7 @@ elif menu == "Quiz":
 
 # ---------- FLASHCARDS ----------
 elif menu == "Flashcards":
-    st.markdown('<div class="section-header" style="background-color: #E0F2F1;"><h2>🧠 Flashcards</h2><p>Review key concepts with study cards. <b>Front:</b> Question/Concept | <b>Back:</b> Detailed Explanation.</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header" style="background-color: #E0F2F1;"><h2>🧠 Flashcards</h2><p>Test your memory with study cards. The <b>Front</b> contains the question, and the <b>Back</b> contains the detailed answer.</p></div>', unsafe_allow_html=True)
 
     db = load_vector()
     if db and st.button("Generate"):
@@ -325,23 +331,21 @@ elif menu == "Flashcards":
 
         # Parse and display flashcards with colored backgrounds
         cards = res.split("---")
-        bg_colors = ["#E0FFFF", "#F5F5DC", "#FDF5E6"]  # Aqua, Light Brown, Light Caramel
+        bg_colors = ["#E3F2FD", "#F1F8E9", "#FFF3E0", "#F3E5F5", "#FFFDE7"] 
         color_idx = 0
 
         for card in cards:
             content = card.strip()
-            if content and "Front:" in content:
+            if "Front:" in content and "Back:" in content:
                 color = bg_colors[color_idx % len(bg_colors)]
                 # Convert Markdown-style bolding to HTML for display within the div
-                formatted_content = content.replace("**Front:**", "<b>Front:</b>").replace("**Back:**", "<br><b>Back:</b>").replace("\n", "<br>")
+                formatted_content = content.replace("**Front:**", "<b style='color: #000000;'>Front:</b>").replace("**Back:**", "<br><b style='color: #000000;'>Back:</b>").replace("\n", "<br>")
                 st.markdown(f"""
-                    <div style="background-color: {color}; padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #ddd; color: #2c3e50; line-height: 1.6; box-shadow: 2px 2px 8px rgba(0,0,0,0.1);">
-                        {formatted_content}
+                    <div style="background-color: {color}; padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.1); color: #000000 !important; line-height: 1.6; box-shadow: 2px 2px 8px rgba(0,0,0,0.05);">
+                        <span style="color: #000000 !important;">{formatted_content}</span>
                     </div>
                 """, unsafe_allow_html=True)
                 color_idx += 1
-            elif content:
-                st.write(content)
 
 # ---------- NOTES ----------
 elif menu == "Notes":
